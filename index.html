@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Media + Subtítulos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type="file"] { display: none; }
+        .action-button { display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border: 1px solid #444; border-radius: 0.375rem; background-color: #374151; color: #e5e7eb; font-weight: 500; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; width: 100%; text-align: center; }
+        .action-button:hover { background-color: #4b5563; border-color: #555; }
+        .action-button i { margin-right: 0.5rem; }
+        #mediaPlayer {
+            /* Estilo normal (no fullscreen) */
+            max-height: 70vh;
+            background-color: #000;
+            display: block;
+            width: 100%;
+            object-fit: contain;
+        }
+        .video-container {
+             /* Estilo normal (no fullscreen) */
+            position: relative;
+            width: 100%;
+            background-color: #000;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Evita barras de scroll si algo se desborda mínimamente */
+        }
+        #subtitleDisplay {
+            position: absolute;
+            bottom: 15px;
+            left: 5%;
+            right: 5%;
+            width: 90%;
+            z-index: 10;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            text-align: center;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 1.3em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        #subtitleDisplay:empty { opacity: 0; }
+        .control-button { padding: 8px 12px; margin: 0 5px; font-size: 1em; cursor: pointer; border: 1px solid #555; border-radius: 4px; background-color: #4a5568; color: white; transition: background-color 0.2s; }
+        .control-button:hover { background-color: #2d3748; }
+        .control-button:disabled { background-color: #718096; cursor: not-allowed; opacity: 0.6; }
+
+        /* --- ESTILOS PARA PANTALLA COMPLETA --- */
+        .video-container:fullscreen { width: 100%; height: 100%; background-color: #000; margin-bottom: 0; display: flex; align-items: center; justify-content: center; }
+        .video-container:-webkit-full-screen { width: 100%; height: 100%; background-color: #000; margin-bottom: 0; display: flex; align-items: center; justify-content: center; }
+        .video-container:-moz-full-screen { width: 100%; height: 100%; background-color: #000; margin-bottom: 0; display: flex; align-items: center; justify-content: center; }
+        .video-container:-ms-fullscreen { width: 100%; height: 100%; background-color: #000; margin-bottom: 0; display: flex; align-items: center; justify-content: center; }
+
+        .video-container:fullscreen #mediaPlayer { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; }
+        .video-container:-webkit-full-screen #mediaPlayer { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; }
+        .video-container:-moz-full-screen #mediaPlayer { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; }
+        .video-container:-ms-fullscreen #mediaPlayer { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; }
+
+        /* Ajustes opcionales subtítulos en pantalla completa */
+        /* .video-container:fullscreen #subtitleDisplay { bottom: 25px; font-size: 1.5em; } */
+        /* ... prefijos ... */
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container mx-auto max-w-3xl bg-gray-800 rounded-lg shadow-xl p-6 md:p-8 space-y-6">
+
+        <h1 class="text-2xl font-bold text-center text-white mb-6">Reproductor Media con Subtítulos</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="mediaFile" class="action-button">
+                    <i class="fas fa-upload"></i> Cargar Media (M4A/MP4)
+                </label>
+                <input type="file" id="mediaFile" accept=".m4a,audio/*,.mp4,video/*">
+                <span id="mediaFileName" class="text-xs text-gray-400 block mt-1 ml-1 truncate">Ningún archivo seleccionado</span>
+            </div>
+            <div>
+                <label for="subtitleFile" class="action-button">
+                    <i class="fas fa-closed-captioning"></i> Cargar Subtítulos (SRT)
+                </label>
+                <input type="file" id="subtitleFile" accept=".srt">
+                <span id="subtitleFileName" class="text-xs text-gray-400 block mt-1 ml-1 truncate">Ningún archivo seleccionado</span>
+            </div>
+        </div>
+
+        <div id="videoContainer" class="video-container">
+             <video id="mediaPlayer" controls class="w-full rounded-md">
+                Tu navegador no soporta el elemento de video.
+            </video>
+            <div id="subtitleDisplay">
+               </div>
+        </div>
+
+        <div class="flex justify-between items-center bg-gray-700 p-4 rounded-md shadow">
+            <div class="flex items-center justify-center space-x-2">
+                <label class="text-sm font-medium text-gray-300 mr-2">Sincro:</label>
+                <button id="shiftBack" title="Adelantar subtítulos (-100ms)" class="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-700 focus:ring-blue-500">
+                    <i class="fas fa-backward fa-fw"></i>
+                </button>
+                <span id="offsetDisplay" class="text-lg font-semibold text-white bg-gray-800 px-3 py-1 rounded min-w-[60px] text-center">0</span> <span class="text-sm text-gray-400">ms</span>
+                <button id="shiftForward" title="Retrasar subtítulos (+100ms)" class="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-700 focus:ring-blue-500">
+                     <i class="fas fa-forward fa-fw"></i>
+                </button>
+                 <button id="resetOffset" title="Reiniciar Offset (0ms)" class="p-2 rounded-full bg-gray-500 hover:bg-gray-600 text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-700 focus:ring-gray-400">
+                     <i class="fas fa-undo fa-fw"></i>
+                 </button>
+            </div>
+
+            <div>
+                <button id="fullscreenBtn" title="Pantalla Completa" class="control-button" disabled> <i id="fullscreenIcon" class="fas fa-expand fa-fw"></i>
+                </button>
+            </div>
+        </div>
+
+    </div> <script src="script.js"></script>
+
+    <script>
+        try {
+            const mediaFileInput = document.getElementById('mediaFile');
+            const mediaFileNameSpan = document.getElementById('mediaFileName');
+            const subtitleFileInput = document.getElementById('subtitleFile');
+            const subtitleFileNameSpan = document.getElementById('subtitleFileName');
+
+            if (mediaFileInput && mediaFileNameSpan) {
+                mediaFileInput.addEventListener('change', function(e){
+                    const fileName = e.target.files && e.target.files.length > 0 ? e.target.files[0].name : 'Ningún archivo seleccionado';
+                    mediaFileNameSpan.textContent = fileName;
+                    mediaFileNameSpan.title = fileName;
+                });
+            } else { console.error("No se encontraron los elementos para el input de media o su span de nombre."); }
+
+            if (subtitleFileInput && subtitleFileNameSpan) {
+                subtitleFileInput.addEventListener('change', function(e){
+                    const fileName = e.target.files && e.target.files.length > 0 ? e.target.files[0].name : 'Ningún archivo seleccionado';
+                    subtitleFileNameSpan.textContent = fileName;
+                    subtitleFileNameSpan.title = fileName;
+                });
+            } else { console.error("No se encontraron los elementos para el input de subtítulos o su span de nombre."); }
+        } catch (error) { console.error("Error en el script inline para mostrar nombres de archivo:", error); }
+    </script>
+
+</body>
+</html>
